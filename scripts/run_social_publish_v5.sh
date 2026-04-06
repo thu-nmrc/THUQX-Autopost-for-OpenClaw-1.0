@@ -1,6 +1,7 @@
 #!/bin/bash
-# THUQX 智能传播技能套件 — 四平台一键发布 v5
-# 用法: bash scripts/run_social_publish_v5.sh "AI认知债务"
+# THUQX Autopost for OpenClaw 1.0 — 四平台一键发布
+# 用法: bash scripts/run_social_publish_v5.sh "主题"
+# 顺序发布（同一 CDP 浏览器下并行会争抢输入焦点）
 set -o pipefail
 
 TOPIC="${1:-AI认知债务}"
@@ -8,34 +9,62 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 CDP_PORT="${OPENCLAW_CDP_PORT:-9222}"
 
-# ── CDP 自检 & 自动启动 ─────────────────────────────
 ensure_cdp() {
   if curl -s --max-time 2 "http://127.0.0.1:${CDP_PORT}/json" >/dev/null 2>&1; then
-    echo "[CDP] Chrome DevTools Protocol OK (port ${CDP_PORT})"
+    echo "[CDP] OK (port ${CDP_PORT})"
     return 0
   fi
   echo "[CDP] Chrome not reachable, launching..."
-  open -na "Google Chrome" --args \
-    --remote-debugging-port="${CDP_PORT}" \
-    --user-data-dir="$HOME/chrome-cdp-profile" \
-    --remote-allow-origins="*" \
-    --no-first-run 2>/dev/null
-  for i in $(seq 1 15); do
+  if command -v open >/dev/null 2>&1; then
+    open -na "Google Chrome" --args \
+      --remote-debugging-port="${CDP_PORT}" \
+      --user-data-dir="${HOME}/chrome-cdp-profile" \
+      --remote-allow-origins="*" \
+      --no-first-run \
+      "https://x.com" \
+      "https://weibo.com" \
+      "https://creator.xiaohongshu.com/publish/publish?source=official&from=menu&target=article" \
+      "https://mp.weixin.qq.com" 2>/dev/null || true
+  elif command -v google-chrome >/dev/null 2>&1; then
+    google-chrome --remote-debugging-port="${CDP_PORT}" \
+      --user-data-dir="${HOME}/chrome-cdp-profile" \
+      --remote-allow-origins="*" \
+      --no-first-run \
+      "https://x.com" "https://weibo.com" \
+      "https://creator.xiaohongshu.com/publish/publish?source=official&from=menu&target=article" \
+      "https://mp.weixin.qq.com" 2>/dev/null &
+  elif command -v chromium >/dev/null 2>&1; then
+    chromium --remote-debugging-port="${CDP_PORT}" \
+      --user-data-dir="${HOME}/chrome-cdp-profile" \
+      --remote-allow-origins="*" \
+      --no-first-run \
+      "https://x.com" "https://weibo.com" \
+      "https://creator.xiaohongshu.com/publish/publish?source=official&from=menu&target=article" \
+      "https://mp.weixin.qq.com" 2>/dev/null &
+  else
+    echo "[CDP] ERROR: Install Chrome or start CDP manually on port ${CDP_PORT}." >&2
+    exit 1
+  fi
+  for _ in $(seq 1 15); do
     sleep 2
     if curl -s --max-time 2 "http://127.0.0.1:${CDP_PORT}/json" >/dev/null 2>&1; then
       echo "[CDP] Chrome started on port ${CDP_PORT}"
       return 0
     fi
   done
-  echo "[CDP] ERROR: Could not start Chrome with CDP. Aborting." >&2
+  echo "[CDP] ERROR: Could not start Chrome with CDP." >&2
   exit 1
 }
 
 ensure_cdp
 
-# ── 生成内容 ─────────────────────────────────────────
-echo "Generating content for topic: ${TOPIC}"
-CONTENT=$(python3 "$SCRIPT_DIR/generate_social_content_v4.py" "$TOPIC")
+if [ "${SKIP_CONTENT_GEN:-0}" = "1" ] && [ -n "${THUQX_CONTENT_JSON}" ] && [ -f "${THUQX_CONTENT_JSON}" ]; then
+  CONTENT="$(cat "${THUQX_CONTENT_JSON}")"
+else
+  echo "Generating content for topic: ${TOPIC}"
+  CONTENT="$(python3 "$SCRIPT_DIR/generate_content.py" "$TOPIC")"
+fi
+
 if [ -z "$CONTENT" ]; then
   echo "ERROR: Content generation failed." >&2
   exit 1
@@ -50,36 +79,38 @@ XB="$(extract xhs_body)"
 WT="$(extract wechat_title)"
 WBODY="$(extract wechat_body)"
 
-# ── 四平台顺序发布（CDP 同一浏览器，并行会争抢焦点）────
 echo ""
-echo "========== THUQX 智能传播 =========="
-echo "Twitter / 微博 / 小红书 / 微信公众号"
-echo "====================================="
+echo "========== THUQX 四平台顺序发布 =========="
+echo "Twitter → 微博 → 小红书 → 微信公众号(草稿)"
+echo "========================================="
 echo ""
 
 FAIL=0
 
-echo "[1/4] Publishing Twitter..."
-python3 "$ROOT_DIR/twitter/cdp_tweet.py" "$TW" 2>&1 | sed 's/^/  [Twitter] /'
-[ ${PIPESTATUS[0]} -ne 0 ] && FAIL=$((FAIL+1))
+echo "[1/4] Twitter..."
+bash "$ROOT_DIR/twitter/tweet.sh" "$TW" 2>&1 | sed 's/^/  [Twitter] /'
+[ "${PIPESTATUS[0]}" -ne 0 ] && FAIL=$((FAIL + 1))
 
-echo "[2/4] Publishing 微博..."
-python3 "$ROOT_DIR/weibo/cdp_weibo_publish.py" "$WB" 2>&1 | sed 's/^/  [Weibo] /'
-[ ${PIPESTATUS[0]} -ne 0 ] && FAIL=$((FAIL+1))
+echo "[2/4] Weibo..."
+bash "$ROOT_DIR/weibo/run_weibo_publish.sh" "$WB" 2>&1 | sed 's/^/  [Weibo] /'
+[ "${PIPESTATUS[0]}" -ne 0 ] && FAIL=$((FAIL + 1))
 
-echo "[3/4] Publishing 小红书..."
+echo "[3/4] Xiaohongshu..."
 python3 "$ROOT_DIR/xiaohongshu/cdp_xhs_publish.py" "$XT" "$XB" 2>&1 | sed 's/^/  [XHS] /'
-[ ${PIPESTATUS[0]} -ne 0 ] && FAIL=$((FAIL+1))
+[ "${PIPESTATUS[0]}" -ne 0 ] && FAIL=$((FAIL + 1))
 
-echo "[4/4] Publishing 微信公众号 (草稿)..."
+echo "[4/4] WeChat (draft)..."
 python3 "$ROOT_DIR/wechat/cdp_wechat_publish.py" "$WT" "$WBODY" 2>&1 | sed 's/^/  [WeChat] /'
-[ ${PIPESTATUS[0]} -ne 0 ] && FAIL=$((FAIL+1))
+[ "${PIPESTATUS[0]}" -ne 0 ] && FAIL=$((FAIL + 1))
 
 echo ""
-echo "====================================="
+echo "========================================="
 if [ "$FAIL" -eq 0 ]; then
-  echo "All 4 platforms published successfully."
+  echo "All 4 platforms finished successfully."
 else
-  echo "WARNING: $FAIL platform(s) may need manual check."
+  echo "WARNING: $FAIL platform(s) may need a manual check."
 fi
-echo "====================================="
+echo "========================================="
+
+[ "$FAIL" -gt 0 ] && exit 1
+exit 0
