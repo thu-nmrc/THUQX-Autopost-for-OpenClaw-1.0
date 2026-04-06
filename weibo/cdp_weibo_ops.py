@@ -82,7 +82,7 @@ def js_escape(s: str) -> str:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: cdp_weibo_publish.py <content>", file=sys.stderr)
+        print("Usage: cdp_weibo_ops.py <content>", file=sys.stderr)
         sys.exit(1)
 
     text = sys.argv[1]
@@ -205,11 +205,11 @@ def main():
         })()
         """
         out = js_eval(ws, click_js)
-        print("Publish:", out)
+        print("Ops:", out)
         time.sleep(2)
         if "ERROR" in str(out):
             sys.exit(1)
-        print("Weibo publish flow completed.")
+        print("Weibo Ops flow completed.")
     finally:
         ws.close()
 

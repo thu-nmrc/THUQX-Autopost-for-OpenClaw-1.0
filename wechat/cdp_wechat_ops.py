@@ -11,10 +11,10 @@ Flow:
   5) Click 保存为草稿 only
 
 Usage:
-  python3 cdp_wechat_publish.py "标题" "正文..."
-  python3 cdp_wechat_publish.py "标题" "正文" --author "大可舆评"
-  python3 cdp_wechat_publish.py "标题" "正文" --nav url-only
-  python3 cdp_wechat_publish.py "标题" "正文" --fill-only
+  python3 cdp_wechat_ops.py "标题" "正文..."
+  python3 cdp_wechat_ops.py "标题" "正文" --author "大可舆评"
+  python3 cdp_wechat_ops.py "标题" "正文" --nav url-only
+  python3 cdp_wechat_ops.py "标题" "正文" --fill-only
 """
 from __future__ import annotations
 
@@ -653,7 +653,7 @@ def main():
                     "WARN: 未自动点到「保存为草稿」— 请在页面手动保存（脚本不会点群发）。",
                     file=sys.stderr,
                 )
-        print("WeChat draft flow completed.")
+        print("WeChat Ops (draft) flow completed.")
     finally:
         ws.close()
 

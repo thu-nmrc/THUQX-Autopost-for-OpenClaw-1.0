@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# THUQX — CDP 自检与启动（由 run_social_publish_v5.sh source）
+# THUQX — CDP 自检与启动（由 run_social_ops_v5.sh source）
 
 thuqx_ensure_cdp() {
   local port="${OPENCLAW_CDP_PORT:-9222}"

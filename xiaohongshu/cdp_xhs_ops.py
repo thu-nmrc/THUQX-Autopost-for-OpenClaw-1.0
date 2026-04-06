@@ -402,7 +402,7 @@ def fill_in_main(ws, title: str, body: str) -> bool:
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: cdp_xhs_publish.py <title> <body>", file=sys.stderr)
+        print("Usage: cdp_xhs_ops.py <title> <body>", file=sys.stderr)
         sys.exit(1)
 
     title = sys.argv[1]
@@ -435,7 +435,7 @@ def main():
         time.sleep(0.8)
         no_publish = os.environ.get("XHS_NO_PUBLISH", "").strip() in ("1", "true", "yes")
         if no_publish:
-            print("XHS: content filled. Skipping publish (XHS_NO_PUBLISH=1).")
+            print("XHS: content filled. Skipping live Ops (XHS_NO_PUBLISH=1).")
         else:
             # Step 1: 一键排版 → template selection
             fmt_r = js_eval(ws, CLICK_FORMAT_JS)
@@ -457,7 +457,7 @@ def main():
             js_eval(ws, "(function(){window.scrollTo(0,document.body.scrollHeight);return 'SCROLLED';})()")
             time.sleep(1)
             r3 = js_eval(ws, PUBLISH_JS)
-            print("Publish click:", r3)
+            print("Submit click (platform UI 发布):", r3)
 
             success = False
             for attempt in range(5):
@@ -477,13 +477,13 @@ def main():
                     js_eval(ws, PUBLISH_JS)
                     time.sleep(1)
                     js_eval(ws, CONFIRM_DIALOG_JS)
-                    print(f"  Retry publish+confirm (attempt {attempt+2})")
+                    print(f"  Retry submit+confirm (attempt {attempt+2})")
 
             if success:
-                print("Xiaohongshu publish SUCCESS.")
+                print("Xiaohongshu Ops SUCCESS.")
             else:
-                print("WARN: Publish may not have completed. Check creator center.", file=sys.stderr)
-        print("Xiaohongshu flow completed.")
+                print("WARN: Ops may not have completed. Check creator center.", file=sys.stderr)
+        print("Xiaohongshu Ops flow completed.")
     finally:
         ws.close()
 

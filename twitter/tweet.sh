@@ -1,5 +1,5 @@
 #!/bin/bash
-# Twitter 发布入口 — 调用 CDP 脚本
+# Twitter 运营入口 — 调用 CDP 脚本
 # 用法: bash tweet.sh "tweet content" [url]
 set -o pipefail
 

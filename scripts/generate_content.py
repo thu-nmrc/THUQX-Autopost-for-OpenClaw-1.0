@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-根据主题生成四平台文案，输出 JSON 到 stdout（供 run_social_publish_v5.sh 解析）。
+根据主题生成四平台文案，输出 JSON 到 stdout（供 run_social_ops_v5.sh 解析）。
 与 OpenClaw skill zeelin-social-autopublisher 内脚本保持一致。
 """
 import json

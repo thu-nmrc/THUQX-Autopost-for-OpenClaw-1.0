@@ -272,7 +272,7 @@ def post_tweet(tweet_text, port=9222, base_url="https://x.com"):
             print(f"Post attempt {attempt+1}: {click_result}")
 
             if "SUCCESS" in str(click_result):
-                print("Tweet published successfully.")
+                print("Tweet Ops completed successfully.")
                 return True
 
             if "ERROR:POST_BUTTON_NOT_FOUND" in str(click_result):
@@ -293,10 +293,10 @@ def post_tweet(tweet_text, port=9222, base_url="https://x.com"):
                 """)
                 print(f"Verify: {verify}")
                 if "SUCCESS" in verify or "LIKELY_SUCCESS" in verify:
-                    print("Tweet published successfully.")
+                    print("Tweet Ops completed successfully.")
                     return True
 
-        print("Post attempted but success signal not detected. Check timeline.")
+        print("Ops attempted but success signal not detected. Check timeline.")
         return True
 
     finally:
